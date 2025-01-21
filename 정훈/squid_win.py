@@ -10,7 +10,8 @@ from queue import Queue
 # 글로벌 / 공유 변수
 # --------------------
 frame_queue = Queue(maxsize=2)  # 카메라 프레임을 저장할 큐
-stop_flag = False               # 프로그램 전체 종료 여부 플래그
+stop_flag = True               # 프로그램 전체 종료 여부 플래그
+restart_flag = True             # 게임 재시작 여부 플래그
 
 # 게임 상태
 robot_status = 'blind'    # (blind, speaking, looking)
@@ -23,7 +24,7 @@ MOVE_THRESHOLD = 500      # 움직임 임계값
 def camera_thread(index=1):
     global stop_flag
     
-    cap = cv2.VideoCapture(index, cv2.CAP_AVFOUNDATION)
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # 윈도우에서는 CAP_DSHOW 사용
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 320)
 
@@ -61,9 +62,7 @@ def game_logic_thread():
             
             # 랜덤 사운드 재생 (블로킹)
             rand_sound = random.randint(1, 6)
-            sound_path = ("/Users/pjh_air/Documents/GitHub/"
-                          "Squid_Game 복사본/younghee/sound/squid_game_"
-                           + str(rand_sound) + ".mp3")
+            sound_path = f"./sound/squid_game_{rand_sound}.mp3"  # 상대 경로로 수정
             try:
                 playsound(sound_path)
             except:
@@ -87,7 +86,7 @@ def game_logic_thread():
 # --------------------
 def main_loop():
     global stop_flag
-    global robot_status, player_status
+    global robot_status, player_status, restart_flag
 
     # 배경 차감 초기화
     sub = cv2.createBackgroundSubtractorKNN(history=1, dist2Threshold=500, detectShadows=False)
@@ -126,9 +125,13 @@ def main_loop():
             cv2.imshow("Detection", frame)
             cv2.imshow("mask", mask)
 
-        # 'c' 키를 누르면 종료
-        if cv2.waitKey(1) & 0xFF == ord('c'):
+        # 키 이벤트 처리: esc 키로 종료, R 키로 게임 재시작
+        key = cv2.waitKey(1) & 0xFF
+        if key == 27:  # ESC 키
             stop_flag = True
+        elif key == ord('r'):  # R 키
+            restart_flag = True
+            stop_flag = True  # 현재 게임을 종료한 후 재시작하도록 플래그 설정
 
     cv2.destroyAllWindows()
     print("메인 루프 종료")
@@ -136,15 +139,41 @@ def main_loop():
 # --------------------
 # 4) 실행부
 # --------------------
-if __name__ == "__main__":
+def restart_game():
+    global stop_flag, restart_flag, robot_status, player_status
+    # 게임을 리셋하는 함수
+    stop_flag = False
+    restart_flag = False
+    robot_status = 'blind'
+    player_status = 'alive'
+
+    # 카메라 스레드 초기화
     cam_t = threading.Thread(target=camera_thread, args=(1,), daemon=True)
     cam_t.start()
 
+    # 게임 스레드 초기화
     game_t = threading.Thread(target=game_logic_thread, daemon=True)
     game_t.start()
 
-    main_loop()
+    # 메인 루프 실행
+    while True:
+        main_loop()
+        if restart_flag:  # 재시작 플래그가 있으면 게임을 리셋
+            print("게임을 재시작합니다.")
+            stop_flag = False
+            restart_flag = False
+            robot_status = 'blind'
+            player_status = 'alive'
+            continue  # 게임 리셋 후 다시 main_loop()를 호출
+        else:
+            break  # 재시작 플래그가 없으면 루프 종료
 
+    # 스레드 종료 대기
     cam_t.join()
     game_t.join()
     print("프로그램 완전히 종료")
+
+# 프로그램 실행ㄱㄱ
+if __name__ == "__main__":
+    restart_game()  # 게임 시작
+    # 게임이 종료되거나 재시작될 때까지 기다린 후 종료됩니다.
