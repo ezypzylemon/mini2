@@ -75,9 +75,12 @@ def collect_pose_data():
                 cv2.imwrite(img_file_path, black_background)
                 frame_count += 1
 
-        # Show FPS
+                # Display the number of images saved
+                cv2.putText(frame, f"Saved images: {frame_count}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)  # Red text
+
+        # Show FPS in red text
         fps = int(cap.get(cv2.CAP_PROP_FPS))
-        cv2.putText(frame, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(frame, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)  # Red text
 
         # Display the frame
         cv2.imshow("Pose Capture", frame)
@@ -91,7 +94,7 @@ def collect_pose_data():
                 coord_folder_path = os.path.join(BASE_PATH, COORD_FOLDER_NAME)
                 os.makedirs(coord_folder_path, exist_ok=True)
                 collected_data = []
-                frame_count = 0
+                frame_count = 0  # Reset frame count
                 print(f"Started saving to: {image_folder_path} and keypoints_{coord_folder_number}")
             else:
                 # Stop the current cycle
