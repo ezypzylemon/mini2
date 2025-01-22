@@ -1,15 +1,20 @@
 import tkinter as tk
-from tkinterdnd2 import TkinterDnD, DND_FILES  # tkinter-dnd2 패키지 필요
+from tkinter import filedialog
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 
-# 관절 연결 정보 정의 (MediaPipe 포즈 기반)
+# 전체 관절 연결 정보 (MediaPipe 기반)
 connections = [
-    (11, 13), (13, 15),  # 왼팔
-    (12, 14), (14, 16),  # 오른팔
-    (0, 11), (0, 12), (11, 12)  # 몸통
+    (0, 1), (1, 2), (2, 3), (3, 7),  # 머리와 상체
+    (0, 4), (4, 5), (5, 6), (6, 8),  # 머리와 상체
+    (9, 10), (11, 12),  # 어깨
+    (11, 13), (13, 15), (15, 17), (15, 19), (15, 21),  # 왼팔
+    (12, 14), (14, 16), (16, 18), (16, 20), (16, 22),  # 오른팔
+    (11, 23), (12, 24), (23, 24),  # 엉덩이
+    (23, 25), (25, 27), (27, 29), (27, 31),  # 왼다리
+    (24, 26), (26, 28), (28, 30), (28, 32)  # 오른다리
 ]
 
 # 랜드마크 색상 정의
@@ -29,8 +34,18 @@ def load_npy_file(file_path):
     """
     try:
         data = np.load(file_path)
+        # 단일 프레임 데이터를 다중 프레임 형식으로 변환
+        if data.ndim == 2 and data.shape[1] == 3:
+            data = np.expand_dims(data, axis=0)  # (1, num_joints, 3)
+
+        # 데이터 유효성 검사
         if data.ndim != 3 or data.shape[2] != 3:
             raise ValueError(f"Invalid data shape: {data.shape}")
+
+        # NaN 또는 inf 값 검사
+        if not np.isfinite(data).all():
+            raise ValueError("Data contains NaN or infinite values.")
+
         return data
     except Exception as e:
         raise ValueError(f"Failed to load .npy file: {e}")
@@ -84,14 +99,15 @@ def animate_pose(joint_data):
     plt.legend()
     plt.show()
 
-def on_file_drop(event):
+def open_file():
     """
-    드래그 앤 드롭으로 파일을 로드하여 애니메이션을 실행합니다.
-    Args:
-        event: TkinterDnD 이벤트 객체.
+    파일 대화상자를 열어 사용자가 .npy 파일을 선택하도록 함.
     """
-    file_path = event.data.strip()  # 파일 경로
-    if file_path.endswith(".npy"):
+    file_path = filedialog.askopenfilename(
+        title="Select a .npy file",
+        filetypes=(("NumPy Files", "*.npy"), ("All Files", "*.*"))
+    )
+    if file_path:
         try:
             joint_data = load_npy_file(file_path)
             log_label.config(text=f"[INFO] File loaded: {file_path}\nShape: {joint_data.shape}", fg="green")
@@ -100,8 +116,6 @@ def on_file_drop(event):
             animate_pose(joint_data)
         except Exception as e:
             log_label.config(text=f"[ERROR] {e}", fg="red")
-    else:
-        log_label.config(text="[ERROR] Unsupported file type. Please drop a .npy file.", fg="red")
 
 def on_esc_key(event):
     """
@@ -111,19 +125,16 @@ def on_esc_key(event):
     root.destroy()
 
 # Tkinter GUI 구성
-root = TkinterDnD.Tk()
+root = tk.Tk()
 root.title("3D Pose Animator")
 root.geometry("500x400")
 
-# 드래그 앤 드롭 이벤트 연결
-label = tk.Label(root, text="Drag and drop a .npy file here to visualize", font=("Arial", 14), fg="blue")
-label.pack(pady=50)
+# 파일 열기 버튼
+open_button = tk.Button(root, text="Open .npy File", command=open_file, font=("Arial", 14), fg="white", bg="blue")
+open_button.pack(pady=50)
 
 log_label = tk.Label(root, text="Waiting for file...", font=("Arial", 12))
 log_label.pack(pady=10)
-
-root.drop_target_register(DND_FILES)
-root.dnd_bind('<<Drop>>', on_file_drop)
 
 # Esc 키 이벤트 연결
 root.bind("<Escape>", on_esc_key)
