@@ -42,6 +42,7 @@ def collect_pose_data():
     collected_data = []
     image_folder_path, coord_folder_number = None, None
     frame_count = 0
+    start_time = None  # 시작 시간을 저장할 변수
 
     print("Press 'SPACE' to start/stop saving data. Press 'ESC' to exit.")
 
@@ -78,9 +79,23 @@ def collect_pose_data():
                 # Display the number of images saved
                 cv2.putText(frame, f"Saved images: {frame_count}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)  # Red text
 
+                # Check if 4 seconds have passed
+                if time.time() - start_time >= 4:
+                    is_saving = False
+                    if collected_data:
+                        npy_file_name = f"keypoints_{coord_folder_number}.npy"
+                        npy_file_path = os.path.join(coord_folder_path, npy_file_name)
+                        np.save(npy_file_path, np.array(collected_data))
+                        print(f"Coordinates saved to: {npy_file_path}")
+                    print("Stopped saving.")
+
         # Show FPS in red text
         fps = int(cap.get(cv2.CAP_PROP_FPS))
         cv2.putText(frame, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)  # Red text
+
+        # Display "Recording" if saving
+        if is_saving:
+            cv2.putText(frame, "Recording", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)  # Green text
 
         # Display the frame
         cv2.imshow("Pose Capture", frame)
@@ -95,16 +110,9 @@ def collect_pose_data():
                 os.makedirs(coord_folder_path, exist_ok=True)
                 collected_data = []
                 frame_count = 0  # Reset frame count
+                start_time = time.time()  # 시작 시간 기록
                 print(f"Started saving to: {image_folder_path} and keypoints_{coord_folder_number}")
-            else:
-                # Stop the current cycle
-                if collected_data:
-                    npy_file_name = f"keypoints_{coord_folder_number}.npy"
-                    npy_file_path = os.path.join(coord_folder_path, npy_file_name)
-                    np.save(npy_file_path, np.array(collected_data))
-                    print(f"Coordinates saved to: {npy_file_path}")
-                print("Stopped saving.")
-            is_saving = not is_saving
+                is_saving = True
 
         elif key == 27:  # ESC pressed
             print("Exiting...")
