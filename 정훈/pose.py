@@ -42,9 +42,15 @@ def collect_pose_data():
     collected_data = []
     image_folder_path, coord_folder_number = None, None
     frame_count = 0
-    start_time = None  # 시작 시간을 저장할 변수
+    recording_cycles = 0  # 녹화 사이클 카운터
+    waiting = False  # 대기 상태를 나타내는 변수
+    cycle_start = False  # 사이클 시작 상태를 나타내는 변수
 
-    print("Press 'SPACE' to start/stop saving data. Press 'ESC' to exit.")
+    print("Press 'SPACE' to start the recording cycle. Press 'ESC' to exit.")
+
+    # Set the window size
+    cv2.namedWindow("Pose Capture", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Pose Capture", 1280, 720)  # Set window size to 1280x720
 
     while True:
         ret, frame = cap.read()
@@ -79,8 +85,8 @@ def collect_pose_data():
                 # Display the number of images saved
                 cv2.putText(frame, f"Saved images: {frame_count}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)  # Red text
 
-                # Check if 4 seconds have passed
-                if time.time() - start_time >= 4:
+                # Check if 120 frames have been captured
+                if frame_count >= 120:
                     is_saving = False
                     if collected_data:
                         npy_file_name = f"keypoints_{coord_folder_number}.npy"
@@ -88,6 +94,8 @@ def collect_pose_data():
                         np.save(npy_file_path, np.array(collected_data))
                         print(f"Coordinates saved to: {npy_file_path}")
                     print("Stopped saving.")
+                    recording_cycles += 1  # Increment cycle count
+                    waiting = True  # Set waiting state
 
         # Show FPS in red text
         fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -97,25 +105,48 @@ def collect_pose_data():
         if is_saving:
             cv2.putText(frame, "Recording", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)  # Green text
 
+        # Display "Wait" if waiting
+        if waiting:
+            cv2.putText(frame, "Wait", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)  # Yellow text
+
+        # Display "Cycle Start" if cycle is starting
+        if cycle_start:
+            cv2.putText(frame, "Cycle Start", (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)  # Blue text
+            cycle_start = False  # Reset cycle start state
+
         # Display the frame
         cv2.imshow("Pose Capture", frame)
 
         # Handle key inputs
         key = cv2.waitKey(1) & 0xFF
         if key == ord(' '):  # Spacebar pressed
-            if not is_saving:
-                # Start a new cycle: create new folders
-                image_folder_path, coord_folder_number = create_new_image_folder(BASE_PATH)
-                coord_folder_path = os.path.join(BASE_PATH, COORD_FOLDER_NAME)
-                os.makedirs(coord_folder_path, exist_ok=True)
-                collected_data = []
-                frame_count = 0  # Reset frame count
-                start_time = time.time()  # 시작 시간 기록
-                print(f"Started saving to: {image_folder_path} and keypoints_{coord_folder_number}")
-                is_saving = True
+            if recording_cycles == 0:  # Start only if not already started
+                waiting = True  # Initial wait before starting
+                cycle_start = True  # Set cycle start state
+                print("Starting recording cycles...")
 
         elif key == 27:  # ESC pressed
             print("Exiting...")
+            break
+
+        # Start a new cycle if not saving and waiting is false
+        if not is_saving and waiting and recording_cycles < 10:
+            # Wait for 2 seconds before starting recording
+            time.sleep(2)
+            waiting = False  # Reset waiting state
+
+            # Start a new cycle: create new folders
+            image_folder_path, coord_folder_number = create_new_image_folder(BASE_PATH)
+            coord_folder_path = os.path.join(BASE_PATH, COORD_FOLDER_NAME)
+            os.makedirs(coord_folder_path, exist_ok=True)
+            collected_data = []
+            frame_count = 0  # Reset frame count
+            print(f"Started saving to: {image_folder_path} and keypoints_{coord_folder_number}")
+            is_saving = True
+
+        # Stop after 10 cycles
+        if recording_cycles >= 10:
+            print("Completed 10 recording cycles.")
             break
 
     cap.release()
