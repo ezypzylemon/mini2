@@ -4,8 +4,9 @@ import os
 from ultralytics import YOLO
 import time
 
-# Base data storage path
-BASE_PATH = 'C:/Users/Admin/Desktop/motion_data_skeleton/side'
+# Base data storage path 
+pose_name = 'back'
+BASE_PATH = f'C:/Users/Admin/흑백YOLO/{pose_name}'
 os.makedirs(BASE_PATH, exist_ok=True)
 
 num_samples = 120  # Maximum number of frames to collect per action
@@ -14,7 +15,7 @@ fps = 30  # Frames per second
 def get_next_directory(base_path):
     """Get the next numbered directory in the base path."""
     existing_dirs = [int(d) for d in os.listdir(base_path) if d.isdigit()]
-    next_dir = str(max(existing_dirs) + 1) if existing_dirs else '1'
+    next_dir = str(max(existing_dirs) + 1) if existing_dirs else '1' 
     next_path = os.path.join(base_path, next_dir)
     os.makedirs(next_path, exist_ok=True)
     return next_path
@@ -23,7 +24,7 @@ def collect_skeleton_data(base_path, max_frames=120):
     cap = cv2.VideoCapture(0)  # Activate webcam
     cap.set(cv2.CAP_PROP_FPS, fps) 
     if not cap.isOpened():
-        print("Camera could not be opened. Check your connection.")
+        print("Camera could not be opened. Check your connection.") 
         return
 
     print("Press SPACEBAR to start collecting data, or ESC to exit.")
