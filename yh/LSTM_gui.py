@@ -12,7 +12,7 @@ mp_drawing = mp.solutions.drawing_utils  # 관절 시각화를 위한 유틸리�
 cap = cv2.VideoCapture(0)
 
 # LSTM 모델 불러오기
-model_path = "C:/Users/Admin/Desktop/data/lstm_model_scripted.pt"  # 사전 저장된 LSTM 모델 경로
+model_path = "C:/Users/Admin/Desktop/lstm_model_scripted.pt"  # 사전 저장된 LSTM 모델 경로
 model = torch.jit.load(model_path)
 model.eval()
 
