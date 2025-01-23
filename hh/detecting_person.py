@@ -68,6 +68,6 @@ def collect_skeleton_data(action, samples=100):
     cap.release()
     cv2.destroyAllWindows()
 
-# Collect skeleton data for each action
+# Collect skeleton data for each action 
 for action in actions:
     collect_skeleton_data(action, num_samples)
