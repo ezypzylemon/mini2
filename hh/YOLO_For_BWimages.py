@@ -9,7 +9,7 @@ BASE_PATH = 'C:/Users/Admin/Desktop/motion_data_skeleton/side'
 os.makedirs(BASE_PATH, exist_ok=True)
 
 num_samples = 120  # Maximum number of frames to collect per action
-fps = 30  # Frames per second
+fps = 30  # Frames per second 
 
 def get_next_directory(base_path):
     """Get the next numbered directory in the base path."""
@@ -76,11 +76,21 @@ def collect_skeleton_data(base_path, max_frames=120):
                 if cv2.imwrite(img_file_path, person_frame):
                     print(f"Image saved: {img_file_path}")
 
+                '''
                 # Display the processed frame
                 cv2.putText(person_frame, f"Collecting: {frame_count + 1}/{max_frames}",
                             (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
                 cv2.imshow('Person Data Collection', person_frame)
+                ''' 
+                
+                # Display the processed frame with current session and frame number
+                cv2.putText(person_frame, f"Session: {os.path.basename(save_path)} - Frame: {frame_count + 1}/{max_frames}",
+                            (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                # cv2.putText(person_frame, f"Collecting: {frame_count + 1}/{max_frames}",
+                #             (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                cv2.imshow('Person Data Collection', person_frame)
 
+ 
                 frame_count += 1
 
                 # Check if we reached max_frames
