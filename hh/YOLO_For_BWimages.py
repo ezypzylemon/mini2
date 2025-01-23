@@ -1,3 +1,7 @@
+########################################
+# 사람 : 흰색 / 그외 : 검은색 => CNN 위한 데이터 수집 코드
+########################################
+
 import cv2
 import numpy as np
 import os
@@ -5,7 +9,7 @@ from ultralytics import YOLO
 import time
 
 # Base data storage path 
-pose_name = 'back'
+pose_name = 'back' # squat / side / back
 BASE_PATH = f'C:/Users/Admin/흑백YOLO/{pose_name}'
 os.makedirs(BASE_PATH, exist_ok=True)
 
@@ -129,3 +133,4 @@ def collect_skeleton_data(base_path, max_frames=120):
 
 # Start collecting skeleton data
 collect_skeleton_data(BASE_PATH, num_samples)
+ 
